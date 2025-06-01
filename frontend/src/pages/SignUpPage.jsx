@@ -65,7 +65,7 @@ const SignUpPage = () => {
         onboardingCompleted: false,
       })
 
-      navigate("/getting-started")
+      navigate("/dashboard")
     } catch (error) {
       setError(error.message)
     } finally {
@@ -93,7 +93,7 @@ const SignUpPage = () => {
         onboardingCompleted: false,
       })
 
-      navigate("/getting-started")
+      navigate("/dashboard")
     } catch (error) {
       setError(error.message)
     } finally {
