@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./contexts/AuthContext"
 import Header from "./components/Header"
@@ -16,6 +15,7 @@ import ProfilePage from "./pages/ProfilePage"
 import AdvisoryPage from "./pages/AdvisoryPage"
 import ReportsPage from "./pages/ReportsPage"
 import AssistantPage from "./pages/AssistantPage"
+import FarmInformationPage from "./pages/FarmInformationPage"
 // import "./App.css"
 
 function App() {
@@ -78,6 +78,7 @@ function App() {
             >
               <Route index element={<DashboardPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="farm-info" element={<FarmInformationPage />} />
               <Route path="advisory" element={<AdvisoryPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="assistant" element={<AssistantPage />} />
