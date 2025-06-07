@@ -1,66 +1,129 @@
-import { createContext, useContext, useEffect, useState } from "react"
-import { onAuthStateChanged, signOut } from "firebase/auth"
-import { doc, getDoc } from "firebase/firestore"
-import { auth, db } from "../firebase/config"
+import { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-const AuthContext = createContext()
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
+const AuthContext = createContext();
+axios.defaults.baseURL = "http://localhost:5000";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [userProfile, setUserProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user)
-        // Fetch user profile from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid))
-          if (userDoc.exists()) {
-            setUserProfile(userDoc.data())
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error)
-        }
-      } else {
-        setUser(null)
-        setUserProfile(null)
-      }
-      setLoading(false)
-    })
-
-    return unsubscribe
-  }, [])
-
-  const logout = async () => {
-    try {
-      await signOut(auth)
-      setUser(null)
-      setUserProfile(null)
-    } catch (error) {
-      console.error("Error signing out:", error)
+    if (token) {
+      axios.get("http://localhost:5000/api/farmers/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(res => setCurrentUser(res.data))
+        .catch(() => {
+          setToken(null);
+          localStorage.removeItem("token");
+        });
     }
-  }
+  }, [token]);
 
-  const value = {
-    user,
-    userProfile,
-    loading,
-    logout,
-  }
+  const login = async (email, password) => {
+    const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    setToken(res.data.token);
+    setCurrentUser(res.data.user);
+  };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setCurrentUser(null);
+    navigate("/signin");
+  };
+
+  // const updateUserProfile = async (data) => {
+  //   const token = localStorage.getItem("token");
+  
+  //   try {
+  //     await axios.put("http://localhost:5000/api/farmers/me", data, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+          
+  //       },
+        
+  //     });
+  //     console.log("Using token:", token);
+  //   } catch (err) {
+  //     if (err.response?.status === 404) {
+  //       // If not found, create a new profile
+  //       await axios.post("http://localhost:5000/api/farmers", data, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //     } else {
+  //       throw err;
+  //     }
+  //   }
+  // };
+
+  const updateUserProfile = async (profileData) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found");
+  
+      const res = await axios.put("http://localhost:5000/api/farmers/me", profileData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      return res.data;
+    } catch (err) {
+      console.error("Profile update error:", err);
+      throw err;
+    }
+  };
+  
+  
+
+  const updateFarmInfo = async (data) => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      await axios.put("http://localhost:5000/api/farminfo/me", data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (err) {
+      if (err.response?.status === 404) {
+        await axios.post("http://localhost:5000/api/farminfo", data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        throw err;
+      }
+    }
+  };
+  
+  
+  const signup = async (email, password, name) => {
+    const res = await axios.post("http://localhost:5000/api/auth/signup", {
+      email,
+      password,
+      name
+    });
+  
+    localStorage.setItem("token", res.data.token);
+    setToken(res.data.token);
+    setCurrentUser(res.data.user);
+  };
+  
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ currentUser, signup , token, login, logout, updateUserProfile, updateFarmInfo }}>
+
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);

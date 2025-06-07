@@ -1,8 +1,15 @@
-import express from 'express';
-import { saveUserData } from '../controllers/authController.js';
-
+const express = require('express');
 const router = express.Router();
+const { signup, login } = require('../controllers/authController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.post('/save-user-data', saveUserData);
+// Public routes
+router.post('/signup', signup);
+router.post('/login', login);
 
-export default router; 
+// Protected route example
+router.get('/dashboard', authMiddleware, (req, res) => {
+    res.json({ message: `Welcome back, user ${req.user.userId}` });
+});
+
+module.exports = router;

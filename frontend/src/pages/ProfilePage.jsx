@@ -15,16 +15,18 @@ const ProfilePage = () => {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (currentUser?.profile) {
+    if (currentUser) {
+      const [firstName = "", lastName = ""] = currentUser.name?.split(" ") || []
       setFormData({
-        firstName: currentUser.profile.firstName || "",
-        lastName: currentUser.profile.lastName || "",
+        firstName,
+        lastName,
         email: currentUser.email || "",
-        phone: currentUser.profile.phone || "",
-        address: currentUser.profile.address || "",
+        phone: currentUser.phone || "",
+        address: currentUser.address || "",
       })
     }
   }, [currentUser])
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target

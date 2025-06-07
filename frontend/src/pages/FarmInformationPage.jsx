@@ -2,7 +2,8 @@ import { useState, useEffect } from "react"
 import { useAuth } from "../contexts/AuthContext"
 
 const FarmInformationPage = () => {
-  const { currentUser, updateUserProfile } = useAuth()
+  const { currentUser, updateFarmInfo } = useAuth()
+
   const [formData, setFormData] = useState({
     crop_type: "",
     land_area: "",
@@ -41,7 +42,8 @@ const FarmInformationPage = () => {
     setSuccess("")
 
     try {
-      await updateUserProfile({ farmInfo: formData })
+      await updateFarmInfo(formData)
+
       setSuccess("Farm information updated successfully!")
     } catch (error) {
       setError("Failed to update farm information. Please try again.")

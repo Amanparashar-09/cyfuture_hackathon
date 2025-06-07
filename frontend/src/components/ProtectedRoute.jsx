@@ -1,8 +1,8 @@
-import { useAuth } from "../contexts/AuthContext"
-import { Navigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth()
+  const { currentUser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -12,10 +12,10 @@ const ProtectedRoute = ({ children }) => {
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  return user ? children : <Navigate to="/signin" />
-}
+  return currentUser ? children : <Navigate to="/signin" />;
+};
 
-export default ProtectedRoute
+export default ProtectedRoute;

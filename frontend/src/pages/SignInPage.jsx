@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { auth } from "../firebase/config"
+import { useAuth } from "../contexts/AuthContext"
+
 
 const SignInPage = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +11,8 @@ const SignInPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const navigate = useNavigate()
+  const { login } = useAuth();
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -21,34 +23,20 @@ const SignInPage = () => {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+  
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password)
-      navigate("/dashboard")
-    } catch (error) {
-      setError(error.message)
+      await login(formData.email, formData.password); // from AuthContext
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid credentials");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true)
-    setError("")
-
-    try {
-      const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
-      navigate("/dashboard")
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12 px-4">
@@ -142,7 +130,7 @@ const SignInPage = () => {
             </div>
 
             <button
-              onClick={handleGoogleSignIn}
+              onClick={handleSubmit}
               disabled={loading}
               className="mt-4 w-full border border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2"
             >

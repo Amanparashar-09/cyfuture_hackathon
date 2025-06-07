@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { auth } from "../firebase.js"
+import { useAuth } from "../contexts/AuthContext"
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -10,13 +9,13 @@ const SignUpPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    farmName: "",
-    farmSize: "",
     agreeToTerms: false,
   })
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const navigate = useNavigate()
+  const { signup } = useAuth()
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -28,9 +27,9 @@ const SignUpPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError("")
-    
+    setLoading(true)
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       setLoading(false)
@@ -44,121 +43,11 @@ const SignUpPage = () => {
     }
 
     try {
-      console.log("Starting signup process...");
-      
-      // First, create user in Firebase
-      const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        formData.email, 
-        formData.password
-      );
-      const user = userCredential.user;
-      console.log("Firebase user created:", user.uid);
-
-      // Update user profile in Firebase
-      await updateProfile(user, {
-        displayName: `${formData.firstName} ${formData.lastName}`,
-      });
-      console.log("Firebase profile updated");
-
-      // Then, save additional data to MongoDB
-      const response = await fetch('http://localhost:5000/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          farmName: formData.farmName,
-          farmSize: formData.farmSize,
-          firebaseUid: user.uid,
-        }),
-      });
-
-      if (!response.ok) {
-        // If MongoDB save fails, delete the Firebase user
-        await user.delete();
-        throw new Error('Failed to save user data');
-      }
-
-      console.log("User data saved to MongoDB");
-      navigate("/dashboard");
-    } catch (error) {
-      console.error("Signup error:", error);
-      if (error.code === 'auth/email-already-in-use') {
-        setError("This email is already registered. Please use a different email or sign in.");
-      } else if (error.code === 'auth/weak-password') {
-        setError("Password should be at least 6 characters long.");
-      } else if (error.code === 'auth/invalid-email') {
-        setError("Please enter a valid email address.");
-      } else {
-        setError(error.message || "An error occurred during signup. Please try again.");
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGoogleSignUp = async () => {
-    setLoading(true)
-    setError("")
-
-    try {
-      const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      })
-      
-      const result = await signInWithPopup(auth, provider)
-      const user = result.user
-      console.log("Google sign in successful:", {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL
-      });
-
-      // Prepare user data for MongoDB
-      const userData = {
-        firstName: user.displayName?.split(" ")[0] || "",
-        lastName: user.displayName?.split(" ")[1] || "",
-        email: user.email,
-        farmName: "",
-        farmSize: "",
-        firebaseUid: user.uid,
-        photoURL: user.photoURL || "",
-      };
-      console.log("Sending data to MongoDB:", userData);
-
-      // Save user data to MongoDB
-      const response = await fetch('http://localhost:5000/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save user data');
-      }
-
-      const savedUser = await response.json();
-      console.log("User data saved to MongoDB:", savedUser);
-      
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+      await signup(formData.email, formData.password, fullName)
       navigate("/dashboard")
-    } catch (error) {
-      console.error("Google signup error:", error);
-      if (error.code === 'auth/popup-blocked') {
-        setError("Please allow popups for this website to sign in with Google");
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        setError("Sign in was cancelled. Please try again.");
-      } else {
-        setError(error.message || "An error occurred during Google sign in. Please try again.");
-      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Signup failed. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -233,42 +122,6 @@ const SignUpPage = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               />
-            </div>
-
-            <div>
-              <label htmlFor="farmName" className="block text-sm font-medium text-gray-700 mb-2">
-                Farm Name
-              </label>
-              <input
-                type="text"
-                id="farmName"
-                name="farmName"
-                value={formData.farmName}
-                onChange={handleInputChange}
-                placeholder="Green Valley Farm"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="farmSize" className="block text-sm font-medium text-gray-700 mb-2">
-                Farm Size
-              </label>
-              <select
-                id="farmSize"
-                name="farmSize"
-                value={formData.farmSize}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select farm size</option>
-                <option value="small">Small (1-50 acres)</option>
-                <option value="medium">Medium (51-200 acres)</option>
-                <option value="large">Large (201-1000 acres)</option>
-                <option value="enterprise">Enterprise (1000+ acres)</option>
-              </select>
             </div>
 
             <div>

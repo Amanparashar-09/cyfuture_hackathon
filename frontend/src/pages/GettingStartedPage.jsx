@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAuthState } from "react-firebase-hooks/auth"
-import { doc, updateDoc, getDoc } from "firebase/firestore"
-import { auth, db } from "../firebase/config"
+import { useAuth } from "../contexts/AuthContext"
 
 const GettingStartedPage = () => {
-  const [user, loading] = useAuthState(auth)
+  const { currentUser, token } = useAuth();
+const [loading, setLoading] = useState(true);
+
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
     farmType: "",
@@ -19,10 +19,29 @@ const GettingStartedPage = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/signin")
-    }
-  }, [user, loading, navigate])
+    const fetchOnboarding = async () => {
+      if (!currentUser) return;
+  
+      try {
+        const res = await fetch("http://localhost:5000/api/onboarding", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        if (!res.ok) throw new Error("Failed to fetch onboarding");
+  
+        const savedData = await res.json();
+        setFormData((prev) => ({ ...prev, ...savedData }));
+      } catch (err) {
+        console.error("Error loading onboarding:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchOnboarding();
+  }, [currentUser, token]);
+  
+  
 
   const farmTypes = [
     { id: "crop", label: "Crop Farming", icon: "🌾", description: "Grains, vegetables, fruits" },
@@ -82,22 +101,28 @@ const GettingStartedPage = () => {
   }
 
   const handleComplete = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
-      if (user) {
-        await updateDoc(doc(db, "users", user.uid), {
-          ...formData,
-          onboardingCompleted: true,
-          completedAt: new Date().toISOString()
-        })
-        navigate("/dashboard")
-      }
-    } catch (error) {
-      console.error("Error saving onboarding data:", error)
+      const res = await fetch("http://localhost:5000/api/onboarding", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+  
+      if (!res.ok) throw new Error("Failed to update onboarding");
+  
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Onboarding error:", err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
+  
+  
 
   const ProgressBar = () => (
     <div className="w-full bg-gray-200 rounded-full h-2 mb-8">
