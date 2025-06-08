@@ -2,14 +2,22 @@ const Farmer = require('../models/Farmer');
 
 // ➕ Create farmer profile (only once)
 exports.createFarmerProfile = async (req, res) => {
+  console.log("Creating profile with data:", {
+    userId: req.user.userId,
+    email: req.user.email,
+    body: req.body
+  });
+  
   try {
     const exists = await Farmer.findOne({ userId: req.user.userId });
+    console.log("Checking if profile exists for userId:", exists);
     if (exists) return res.status(400).json({ message: "Profile already exists" });
 
     const farmer = await Farmer.create({
       userId: req.user.userId,
       firstName: req.body.firstName,
       lastName: req.body.lastName,
+      email: req.user.email, 
       phone: req.body.phone,
       address: req.body.address
     });
@@ -41,6 +49,7 @@ exports.updateMyFarmerProfile = async (req, res) => {
         $set: {
           firstName: req.body.firstName,
           lastName: req.body.lastName,
+          email: req.user.email,
           phone: req.body.phone,
           address: req.body.address
         }

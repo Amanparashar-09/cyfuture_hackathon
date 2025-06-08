@@ -16,24 +16,36 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => setCurrentUser(res.data))
-        .catch(() => {
-          setToken(null);
-          localStorage.removeItem("token");
+        .catch((err) => {
+          if (err.response?.status === 404) {
+            // Profile not yet created — that's fine
+            console.log("No farmer profile yet.");
+          } else {
+            // Actual token issue — log out
+            setToken(null);
+            localStorage.removeItem("token");
+          }
         });
     }
   }, [token]);
+  
+  
 
   const login = async (email, password) => {
     const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
     localStorage.setItem("token", res.data.token);
     setToken(res.data.token);
     setCurrentUser(res.data.user);
+    console.log("Login response:", res.data);
+
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setCurrentUser(null);
+
+
     navigate("/signin");
   };
 
@@ -63,21 +75,41 @@ export const AuthProvider = ({ children }) => {
   //   }
   // };
 
-  const updateUserProfile = async (profileData) => {
+  // const updateUserProfile = async (profileData) => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) throw new Error("No token found");
+  
+  //     const res = await axios.put("http://localhost:5000/api/farmers/me", profileData, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  
+  //     return res.data;
+  //   } catch (err) {
+  //     console.error("Profile update error:", err);
+  //     throw err;
+  //   }
+  // };
+  const updateUserProfile = async (data) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token found");
+  
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No token found");
-  
-      const res = await axios.put("http://localhost:5000/api/farmers/me", profileData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      await axios.put("http://localhost:5000/api/farmers/me", data, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-  
-      return res.data;
     } catch (err) {
-      console.error("Profile update error:", err);
-      throw err;
+      if (err.response?.status === 404) {
+        console.log("Profile not found, creating new one...");
+        await axios.post("http://localhost:5000/api/farmers/", data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        console.error("Profile update error:", err);
+        throw err;
+      }
     }
   };
   
@@ -116,6 +148,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", res.data.token);
     setToken(res.data.token);
     setCurrentUser(res.data.user);
+    console.log("Login response:", res.data);
+
   };
   
   return (

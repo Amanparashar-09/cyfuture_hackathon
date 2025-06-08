@@ -1,9 +1,9 @@
-import { useState } from "react"
-
+import { useState  , useEffect} from "react"
+import axios from "axios"
 const ReportsPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("month")
   const [selectedReport, setSelectedReport] = useState("overview")
-
+  const [farmData, setFarmData] = useState(null)
   const reportTypes = [
     { value: "overview", label: "Farm Overview", icon: "📊" },
     { value: "water", label: "Water Usage", icon: "💧" },
@@ -11,6 +11,23 @@ const ReportsPage = () => {
     { value: "efficiency", label: "Efficiency Metrics", icon: "⚡" },
     { value: "financial", label: "Financial Summary", icon: "💰" }
   ]
+  useEffect(() => {
+    const fetchFarmInfo = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const res = await axios.get("http://localhost:5000/api/farminfo/me", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        setFarmData(res.data)
+      } catch (err) {
+        console.error("Failed to fetch farm info:", err)
+      }
+    }
+
+    fetchFarmInfo()
+  }, [])
 
   const timePeriods = [
     { value: "week", label: "Last Week" },
@@ -21,7 +38,7 @@ const ReportsPage = () => {
 
   const overviewData = {
     totalFields: 3,
-    totalAcres: 55,
+    totalAcres: farmData?.land_area || 0,
     waterSaved: "2,847L",
     fertilizerReduced: "45.2kg",
     costSavings: "$1,250",
