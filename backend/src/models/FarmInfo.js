@@ -6,7 +6,8 @@ const FarmInfoSchema = new mongoose.Schema({
     land_area: String,
     season: String,
     location: String,
-    farming_type: String
+    farming_type: String,
+    soil_type: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('FarmInfo', FarmInfoSchema);

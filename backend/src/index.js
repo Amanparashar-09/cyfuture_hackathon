@@ -1,14 +1,13 @@
+require("dotenv").config();
+
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const authRoutes = require('./routes/auth');
 const farmerRoutes = require('./routes/farmers');
 const farmInfoRoutes = require('./routes/farminfo');
-require("dotenv").config();
-
-// dotenv.config();
+const assistantRoutes = require('./routes/assistant');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,6 +21,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/farminfo', farmInfoRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // Mongoose connection using .then()
 mongoose.connect(process.env.MONGO_URI)
