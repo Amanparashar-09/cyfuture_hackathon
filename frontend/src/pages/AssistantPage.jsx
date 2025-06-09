@@ -1,4 +1,26 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react";
+import run from "../gemini";
+
+
+const formatMarkdown = (text) => {
+  const lines = text.split("\n");
+  const formatted = lines.map(line => {
+    if (/^\*\*(.+)\*\*$/.test(line.trim())) {
+      // Full bold line - treated as heading
+      return `<h3 class="font-semibold text-md text-green-700 mb-1">${line.replace(/\*\*(.+)\*\*/, '$1')}</h3>`;
+    } else if (/^\* (.+)/.test(line.trim())) {
+      // Bullet point
+      return `<li class="ml-4 list-disc">${line.replace(/^\* (.+)/, '$1')}</li>`;
+    } else {
+      // Inline bold
+      return `<p>${line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`;
+    }
+  });
+
+  // Wrap bullets in <ul>
+  return formatted.join('\n').replace(/(<li[\s\S]+?<\/li>)/g, "<ul>$1</ul>");
+};
+
 
 const AssistantPage = () => {
   const [messages, setMessages] = useState([
@@ -11,6 +33,16 @@ const AssistantPage = () => {
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const quickActions = [
     { icon: "💧", text: "Water optimization tips", action: "water-tips" },
@@ -30,32 +62,53 @@ const AssistantPage = () => {
     "cost-optimization": "Analysis shows potential savings of $800-1200 this season through optimized resource usage. Key opportunities: reduce water consumption by 20%, optimize fertilizer timing, and implement precision application techniques."
   }
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return
 
-    const newMessage = {
-      id: messages.length + 1,
-      type: "user",
-      content: inputMessage,
-      timestamp: new Date().toLocaleTimeString()
-    }
+// 
+const handleSendMessage = async () => {
+  if (!inputMessage.trim()) return;
 
-    setMessages(prev => [...prev, newMessage])
-    setInputMessage("")
-    setIsTyping(true)
+  const newMessage = {
+    id: messages.length + 1,
+    type: "user",
+    content: inputMessage,
+    timestamp: new Date().toLocaleTimeString(),
+  };
 
-    // Simulate AI response
-    setTimeout(() => {
-      const response = {
-        id: messages.length + 2,
-        type: "assistant",
-        content: generateResponse(inputMessage),
-        timestamp: new Date().toLocaleTimeString()
-      }
-      setMessages(prev => [...prev, response])
-      setIsTyping(false)
-    }, 1500)
+  setMessages(prev => [...prev, newMessage]);
+  setInputMessage("");
+  setIsTyping(true);
+
+  try {
+    // Call Gemini API via your run() function
+    const responseText = await run(inputMessage);
+
+    // Strip Markdown formatting
+    const cleanResponse = responseText.replace(/\*\*(.*?)\*\*/g, "$1").trim();
+
+    const responseMessage = {
+      id: messages.length + 2,
+      type: "assistant",
+      content: cleanResponse,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setMessages(prev => [...prev, responseMessage]);
+  } catch (error) {
+    console.error("Error fetching AI response:", error);
+
+    // Optional: Show error message to user
+    const errorMessage = {
+      id: messages.length + 2,
+      type: "assistant",
+      content: "Sorry, I couldn't fetch a response. Please try again.",
+      timestamp: new Date().toLocaleTimeString(),
+    };
+    setMessages(prev => [...prev, errorMessage]);
+  } finally {
+    setIsTyping(false);
   }
+};
+
 
   const handleQuickAction = (action) => {
     const response = {
@@ -122,40 +175,41 @@ const AssistantPage = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Messages */}
           <div className="h-96 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-              >
+            {messages.map((message, index) => {
+              const isLast = index === messages.length - 1;
+              return (
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.type === "user"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-900"
-                  }`}
+                  key={message.id}
+                  className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+                  ref={isLast ? messagesEndRef : null}
                 >
-                  <p className="text-sm">{message.content}</p>
-                  <p className={`text-xs mt-1 ${
-                    message.type === "user" ? "text-green-100" : "text-gray-500"
-                  }`}>
-                    {message.timestamp}
-                  </p>
-                </div>
-              </div>
-            ))}
-            
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      message.type === "user"
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-100 text-gray-900"
+                    }`}
+                  >
+                    <div
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{
+                        __html: message.type === "assistant"
+                          ? formatMarkdown(message.content)
+                          : message.content,
+                      }}
+                    />
+                    <p className={`text-xs mt-1 ${
+                      message.type === "user" ? "text-green-100" : "text-gray-500"
+                    }`}>
+                      {message.timestamp}
+                    </p>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
+
           </div>
+
 
           {/* Input */}
           <div className="border-t border-gray-200 p-4">
