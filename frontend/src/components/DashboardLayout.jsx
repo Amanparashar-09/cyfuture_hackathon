@@ -9,10 +9,9 @@ const DashboardLayout = () => {
   const { currentUser, logout } = useAuth()
 
   const navigation = [
-    { name: "Overview", href: "/dashboard", icon: "📊" },
-    { name: "Advisory", href: "/dashboard/advisory", icon: "💡" },
-    { name: "Reports", href: "/dashboard/reports", icon: "📈" },
+    { name: "Dashboard", href: "/dashboard", icon: "📊" },
     { name: "Farm Info", href: "/dashboard/farm-info", icon: "🌾" },
+    { name: "AI Assistant", href: "/dashboard/assistant", icon: "🤖" },
     { name: "Profile", href: "/dashboard/profile", icon: "👤" }
   ]
 

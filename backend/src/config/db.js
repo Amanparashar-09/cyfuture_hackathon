@@ -3,7 +3,9 @@ import mongoose from 'mongoose';
 const connectDB = async () => {
   try {
     console.log('Attempting to connect to MongoDB...');
-    const conn = await mongoose.connect('mongodb://localhost:27017/cyfuture_ai', {
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/cyfuture_ai';
+    console.log('Using MongoDB URI:', mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')); // Hide credentials in logs
+    const conn = await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

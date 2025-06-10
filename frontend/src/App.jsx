@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import Header from "./components/Header"
 import Footer from "./components/Footer"
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -11,12 +11,14 @@ import SignUpPage from "./pages/SignUpPage"
 import GettingStartedPage from "./pages/GettingStartedPage"
 import DashboardPage from "./pages/DashboardPage"
 import ProfilePage from "./pages/ProfilePage"
-import AdvisoryPage from "./pages/AdvisoryPage"
-import ReportsPage from "./pages/ReportsPage"
+
 import AssistantPage from "./pages/AssistantPage"
 import FarmInformationPage from "./pages/FarmInformationPage"
+import { useAuth } from "./contexts/AuthContext"
 
 function App() {
+  const { currentUser } = useAuth()
+
   return (
     <div className="App">
       <Routes>
@@ -24,11 +26,15 @@ function App() {
         <Route
           path="/"
           element={
-            <>
-              <Header />
-              <HomePage />
-              <Footer />
-            </>
+            currentUser ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <>
+                <Header />
+                <HomePage />
+                <Footer />
+              </>
+            )
           }
         />
         <Route
@@ -75,8 +81,6 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="farm-info" element={<FarmInformationPage />} />
-          <Route path="advisory" element={<AdvisoryPage />} />
-          <Route path="reports" element={<ReportsPage />} />
           <Route path="assistant" element={<AssistantPage />} />
         </Route>
       </Routes>

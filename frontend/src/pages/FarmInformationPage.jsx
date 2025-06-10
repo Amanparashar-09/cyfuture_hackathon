@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../contexts/AuthContext"
+import { useNavigate } from "react-router-dom"
 
 const FarmInformationPage = () => {
   const { currentUser, updateFarmInfo } = useAuth()
+  const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
     crop_type: "",
@@ -10,6 +12,7 @@ const FarmInformationPage = () => {
     season: "",
     location: "",
     farming_type: "",
+    soil_type: "",
   })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState("")
@@ -23,6 +26,7 @@ const FarmInformationPage = () => {
         season: currentUser.farmInfo.season || "",
         location: currentUser.farmInfo.location || "",
         farming_type: currentUser.farmInfo.farming_type || "",
+        soil_type: currentUser.farmInfo.soil_type || "",
       })
     }
   }, [currentUser])
@@ -43,8 +47,10 @@ const FarmInformationPage = () => {
 
     try {
       await updateFarmInfo(formData)
-
       setSuccess("Farm information updated successfully!")
+      setTimeout(() => {
+        navigate("/dashboard")
+      }, 1500)
     } catch (error) {
       setError("Failed to update farm information. Please try again.")
       console.error("Farm info update error:", error)
@@ -64,6 +70,10 @@ const FarmInformationPage = () => {
 
   const farmingTypes = [
     "Organic", "Traditional", "Modern"
+  ]
+
+  const soilTypes = [
+    "Clay", "Sandy", "Loamy", "Silt", "Black", "Red", "Alluvial"
   ]
 
   return (
@@ -183,6 +193,27 @@ const FarmInformationPage = () => {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="soil_type" className="block text-sm font-medium text-gray-700 mb-2">
+                  Soil Type
+                </label>
+                <select
+                  id="soil_type"
+                  name="soil_type"
+                  value={formData.soil_type}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                >
+                  <option value="">Select soil type</option>
+                  {soilTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
