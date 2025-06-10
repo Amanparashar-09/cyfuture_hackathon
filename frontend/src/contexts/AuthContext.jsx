@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-axios.defaults.baseURL = "https://cyfuture-ai-srever.onrender.com";
+axios.defaults.baseURL = "https://cyfuture-ai-srever.onrender.com/api";
 
 const AuthContext = createContext();
 //axios.defaults.baseURL = "http://localhost:5000";
