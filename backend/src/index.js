@@ -13,7 +13,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://cyfuture-ai.vercel.app/', // your actual frontend URL
+  credentials: true
+}));
 app.use(helmet());
 app.use(express.json());
 

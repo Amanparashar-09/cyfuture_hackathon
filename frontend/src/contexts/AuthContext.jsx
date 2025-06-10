@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const AuthContext = createContext();
-axios.defaults.baseURL = "http://localhost:5000";
+//axios.defaults.baseURL = "http://localhost:5000";
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -12,7 +13,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      axios.get("http://localhost:5000/api/farmers/me", {
+      axios.get("/farmers/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => setCurrentUser(res.data))
@@ -32,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   
 
   const login = async (email, password) => {
-    const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+    const res = await axios.post("/auth/login", { email, password });
     localStorage.setItem("token", res.data.token);
     setToken(res.data.token);
     setCurrentUser(res.data.user);
@@ -54,13 +55,13 @@ export const AuthProvider = ({ children }) => {
     if (!token) throw new Error("No token found");
   
     try {
-      await axios.put("http://localhost:5000/api/farmers/me", data, {
+      await axios.put("/farmers/me", data, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
       if (err.response?.status === 404) {
         console.log("Profile not found, creating new one...");
-        await axios.post("http://localhost:5000/api/farmers/", data, {
+        await axios.post("/farmers/", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
@@ -76,14 +77,14 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
   
     try {
-      await axios.put("http://localhost:5000/api/farminfo/me", data, {
+      await axios.put("/farminfo/me", data, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
     } catch (err) {
       if (err.response?.status === 404) {
-        await axios.post("http://localhost:5000/api/farminfo", data, {
+        await axios.post("/farminfo", data, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   
   
   const signup = async (email, password, name) => {
-    const res = await axios.post("http://localhost:5000/api/auth/signup", {
+    const res = await axios.post("/auth/signup", {
       email,
       password,
       name
